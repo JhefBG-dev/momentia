@@ -19,6 +19,12 @@ type Template = {
   preview: string;
 };
 
+type PhotoItem = {
+  id: string;
+  file: File;
+  url: string;
+};
+
 const templates: Template[] = [
   {
     id: "romantic-pink",
@@ -180,12 +186,13 @@ function ParticleCanvas({ accent }: { accent: string }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-    let raf: number;
+    let raf = 0;
 
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
+
     resize();
     window.addEventListener("resize", resize);
 
@@ -203,6 +210,7 @@ function ParticleCanvas({ accent }: { accent: string }) {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const color = accentRef.current;
+
       for (const p of particles) {
         p.y -= p.speed;
         p.x += p.drift;
@@ -213,14 +221,17 @@ function ParticleCanvas({ accent }: { accent: string }) {
         ctx.fillStyle =
           color + Math.round(a * 255).toString(16).padStart(2, "0");
         ctx.fill();
+
         if (p.y < -4) {
           p.y = canvas.height + 4;
           p.x = Math.random() * canvas.width;
         }
+
         if (p.x < -4 || p.x > canvas.width + 4) {
           p.x = Math.random() * canvas.width;
         }
       }
+
       raf = requestAnimationFrame(draw);
     };
 
@@ -249,12 +260,14 @@ function ParticleCanvas({ accent }: { accent: string }) {
 
 function StepBar({ step, theme }: { step: number; theme: ThemeConfig }) {
   const steps = ["Evento", "Datos", "Mensaje", "Fotos", "Estilo", "Review"];
+
   return (
     <div className="stepbar-grid" style={{ marginBottom: 28 }}>
       {steps.map((label, i) => {
         const n = i + 1;
         const active = n === step;
         const done = n < step;
+
         return (
           <div
             key={label}
@@ -344,8 +357,13 @@ export default function CreatePage() {
   const [senderName, setSenderName] = useState("");
   const [shortMessage, setShortMessage] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [coverPhotoId, setCoverPhotoId] = useState("");
+  const [photoError, setPhotoError] = useState("");
 
   const theme = themes[eventType];
+  const photoMin = plan === "basic" ? 3 : 5;
+  const photoMax = plan === "basic" ? 5 : 12;
 
   const filteredTemplates = useMemo(
     () => templates.filter((t) => t.event === eventType && t.plans.includes(plan)),
@@ -359,13 +377,64 @@ export default function CreatePage() {
   const canGoStep2 = !!plan && !!eventType;
   const canGoStep3 = recipientName.trim() && senderName.trim();
   const canGoStep4 = shortMessage.trim().length > 0;
-  const canGoStep5 = !!selectedTemplate;
+  const canGoStep5 = photos.length >= photoMin && photos.length <= photoMax;
+  const canGoStep6 = !!selectedTemplate;
+
+  useEffect(() => {
+    return () => {
+      photos.forEach((photo) => URL.revokeObjectURL(photo.url));
+    };
+  }, [photos]);
+
+  function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const incomingFiles = Array.from(e.target.files || []);
+
+    if (incomingFiles.length === 0) return;
+
+    const availableSlots = photoMax - photos.length;
+
+    if (availableSlots <= 0) {
+      setPhotoError(`Tu plan permite máximo ${photoMax} fotos.`);
+      e.target.value = "";
+      return;
+    }
+
+    const filesToUse = incomingFiles.slice(0, availableSlots);
+
+    const mapped = filesToUse.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      url: URL.createObjectURL(file),
+    }));
+
+    const updated = [...photos, ...mapped];
+    setPhotos(updated);
+    setPhotoError("");
+
+    if (!coverPhotoId && updated.length > 0) {
+      setCoverPhotoId(updated[0].id);
+    }
+
+    e.target.value = "";
+  }
+
+  function removePhoto(id: string) {
+    const target = photos.find((photo) => photo.id === id);
+    if (target) URL.revokeObjectURL(target.url);
+
+    const updated = photos.filter((photo) => photo.id !== id);
+    setPhotos(updated);
+
+    if (coverPhotoId === id) {
+      setCoverPhotoId(updated[0]?.id || "");
+    }
+  }
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "13px 16px",
     borderRadius: 13,
-    border: `1px solid rgba(255,255,255,0.09)`,
+    border: "1px solid rgba(255,255,255,0.09)",
     background: "rgba(255,255,255,0.05)",
     color: "white",
     fontSize: 14,
@@ -456,7 +525,7 @@ export default function CreatePage() {
 
         .stepbar-grid {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(6, 1fr);
           gap: 6px;
         }
 
@@ -705,6 +774,7 @@ export default function CreatePage() {
                       {eventOptions.map(([value, icon, label]) => {
                         const active = eventType === value;
                         const t = themes[value];
+
                         return (
                           <button
                             key={value}
@@ -726,26 +796,20 @@ export default function CreatePage() {
                               background: active
                                 ? t.softBg
                                 : "rgba(255,255,255,0.03)",
-                              color: active
-                                ? "white"
-                                : "rgba(255,255,255,0.55)",
+                              color: active ? "white" : "rgba(255,255,255,0.55)",
                               fontWeight: active ? 600 : 400,
                               fontSize: 14,
                               fontFamily: "inherit",
                               cursor: "pointer",
                               textAlign: "left",
-                              boxShadow: active
-                                ? `0 0 12px ${t.accentGlow}`
-                                : "none",
+                              boxShadow: active ? `0 0 12px ${t.accentGlow}` : "none",
                               transition: "all 0.25s",
                             }}
                           >
                             <span
                               style={{
                                 fontSize: 16,
-                                color: active
-                                  ? t.accent
-                                  : "rgba(255,255,255,0.3)",
+                                color: active ? t.accent : "rgba(255,255,255,0.3)",
                               }}
                             >
                               {icon}
@@ -796,6 +860,7 @@ export default function CreatePage() {
                         >
                           Plan Basic
                         </div>
+
                         <div
                           style={{
                             fontFamily: "'Cormorant Garamond', serif",
@@ -811,6 +876,7 @@ export default function CreatePage() {
                         >
                           $3
                         </div>
+
                         <div
                           style={{
                             fontSize: 12,
@@ -855,20 +921,21 @@ export default function CreatePage() {
                         }}
                       >
                         {plan === "premium" && (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      borderRadius: 18,
-      backgroundImage: `linear-gradient(90deg, transparent, ${theme.accent}18, transparent)`,
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "0% 50%",
-      backgroundSize: "200% 100%",
-      animation: "shimmer 2.5s linear infinite",
-      pointerEvents: "none",
-    }}
-  />
-)}
+                          <div
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              borderRadius: 18,
+                              backgroundImage: `linear-gradient(90deg, transparent, ${theme.accent}18, transparent)`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "0% 50%",
+                              backgroundSize: "200% 100%",
+                              animation: "shimmer 2.5s linear infinite",
+                              pointerEvents: "none",
+                            }}
+                          />
+                        )}
+
                         <div style={{ position: "relative" }}>
                           <div
                             style={{
@@ -890,6 +957,7 @@ export default function CreatePage() {
                             >
                               Plan Premium
                             </div>
+
                             <div
                               style={{
                                 fontSize: 9,
@@ -1063,6 +1131,7 @@ export default function CreatePage() {
                       maxLength={280}
                       style={{ ...inputStyle, resize: "none" }}
                     />
+
                     <div
                       style={{
                         textAlign: "right",
@@ -1097,90 +1166,187 @@ export default function CreatePage() {
 
                 {step === 4 && (
                   <section>
-                    <SectionTitle>Elige el estilo visual</SectionTitle>
+                    <SectionTitle>Agrega tus fotos favoritas</SectionTitle>
+
                     <p
                       style={{
                         fontSize: 13,
                         color: "rgba(255,255,255,0.38)",
-                        marginBottom: 20,
+                        marginBottom: 18,
                         lineHeight: 1.6,
                       }}
                     >
-                      Cada template está pensado para tu{" "}
-                      {eventLabel(eventType).toLowerCase()}.
+                      Tu plan actual permite entre {photoMin} y {photoMax} fotos.
+                      Elige una portada principal para que el regalo se vea más especial.
                     </p>
 
-                    <div className="template-grid">
-                      {filteredTemplates.map((tpl) => {
-                        const active = selectedTemplate === tpl.id;
+                    <div
+                      style={{
+                        border: "1px dashed rgba(255,255,255,0.12)",
+                        borderRadius: 18,
+                        padding: 18,
+                        background: "rgba(255,255,255,0.02)",
+                        marginBottom: 18,
+                      }}
+                    >
+                      <Label>Subir fotos</Label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotosChange}
+                        style={{
+                          width: "100%",
+                          color: "rgba(255,255,255,0.75)",
+                          fontSize: 14,
+                        }}
+                      />
+                      <p
+                        style={{
+                          marginTop: 10,
+                          marginBottom: 0,
+                          fontSize: 12,
+                          color: "rgba(255,255,255,0.35)",
+                        }}
+                      >
+                        Puedes subir varias a la vez.
+                      </p>
+                    </div>
+
+                    {photoError && (
+                      <div
+                        style={{
+                          marginBottom: 16,
+                          padding: "12px 14px",
+                          borderRadius: 14,
+                          background: "rgba(255,80,80,0.08)",
+                          border: "1px solid rgba(255,80,80,0.16)",
+                          color: "#ffb3b3",
+                          fontSize: 13,
+                        }}
+                      >
+                        {photoError}
+                      </div>
+                    )}
+
+                    <div className="template-grid" style={{ marginTop: 10 }}>
+                      {photos.map((photo, index) => {
+                        const isCover = coverPhotoId === photo.id;
+
                         return (
-                          <button
-                            key={tpl.id}
-                            type="button"
-                            className="template-opt"
-                            onClick={() => setSelectedTemplate(tpl.id)}
+                          <div
+                            key={photo.id}
                             style={{
-                              textAlign: "left",
                               border: `1px solid ${
-                                active
-                                  ? theme.accent
-                                  : "rgba(255,255,255,0.07)"
+                                isCover ? theme.accent : "rgba(255,255,255,0.08)"
                               }`,
-                              borderRadius: 20,
-                              padding: 16,
-                              background: active
-                                ? theme.softBg
-                                : "rgba(255,255,255,0.025)",
-                              color: "white",
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              transition: "all 0.3s",
-                              boxShadow: active
-                                ? `0 0 20px ${theme.accentGlow}`
+                              borderRadius: 18,
+                              overflow: "hidden",
+                              background: "rgba(255,255,255,0.03)",
+                              boxShadow: isCover
+                                ? `0 0 18px ${theme.accentGlow}`
                                 : "none",
                             }}
                           >
                             <div
                               style={{
-                                height: 110,
-                                borderRadius: 14,
-                                marginBottom: 14,
-                                background: theme.thumbGrad,
-                                border: `1px solid rgba(255,255,255,0.06)`,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "2rem",
-                                color: theme.accent,
-                                fontFamily: "'Cormorant Garamond', serif",
-                                fontStyle: "italic",
-                                fontWeight: 600,
-                                letterSpacing: "0.02em",
+                                aspectRatio: "1 / 1",
+                                backgroundImage: `url(${photo.url})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
                               }}
-                            >
-                              {tpl.name.split(" ")[0]}
+                            />
+
+                            <div style={{ padding: 14 }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: 10,
+                                  marginBottom: 10,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    color: "rgba(255,255,255,0.5)",
+                                  }}
+                                >
+                                  Foto {index + 1}
+                                </span>
+
+                                {isCover && (
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      padding: "4px 8px",
+                                      borderRadius: 999,
+                                      background: theme.accent,
+                                      color: theme.accentText,
+                                      fontFamily: "'DM Mono', monospace",
+                                      letterSpacing: "0.08em",
+                                      textTransform: "uppercase",
+                                    }}
+                                  >
+                                    Cover
+                                  </span>
+                                )}
+                              </div>
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: 8,
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setCoverPhotoId(photo.id)}
+                                  style={{
+                                    padding: "10px 12px",
+                                    borderRadius: 12,
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    background: isCover ? theme.softBg : "transparent",
+                                    color: "white",
+                                    fontSize: 12,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {isCover ? "Portada elegida" : "Usar como portada"}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => removePhoto(photo.id)}
+                                  style={{
+                                    padding: "10px 12px",
+                                    borderRadius: 12,
+                                    border: "1px solid rgba(255,80,80,0.18)",
+                                    background: "rgba(255,80,80,0.08)",
+                                    color: "#ffb3b3",
+                                    fontSize: 12,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
                             </div>
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                fontSize: 14,
-                                marginBottom: 5,
-                              }}
-                            >
-                              {tpl.name}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: "rgba(255,255,255,0.45)",
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {tpl.preview}
-                            </div>
-                          </button>
+                          </div>
                         );
                       })}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 16,
+                        fontSize: 13,
+                        color: "rgba(255,255,255,0.45)",
+                      }}
+                    >
+                      Has subido {photos.length} de {photoMax} fotos.
                     </div>
 
                     <ButtonRow>
@@ -1205,6 +1371,115 @@ export default function CreatePage() {
 
                 {step === 5 && (
                   <section>
+                    <SectionTitle>Elige el estilo visual</SectionTitle>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "rgba(255,255,255,0.38)",
+                        marginBottom: 20,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Cada template está pensado para tu{" "}
+                      {eventLabel(eventType).toLowerCase()}.
+                    </p>
+
+                    <div className="template-grid">
+                      {filteredTemplates.map((tpl) => {
+                        const active = selectedTemplate === tpl.id;
+
+                        return (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            className="template-opt"
+                            onClick={() => setSelectedTemplate(tpl.id)}
+                            style={{
+                              textAlign: "left",
+                              border: `1px solid ${
+                                active ? theme.accent : "rgba(255,255,255,0.07)"
+                              }`,
+                              borderRadius: 20,
+                              padding: 16,
+                              background: active
+                                ? theme.softBg
+                                : "rgba(255,255,255,0.025)",
+                              color: "white",
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              transition: "all 0.3s",
+                              boxShadow: active
+                                ? `0 0 20px ${theme.accentGlow}`
+                                : "none",
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: 110,
+                                borderRadius: 14,
+                                marginBottom: 14,
+                                background: theme.thumbGrad,
+                                border: "1px solid rgba(255,255,255,0.06)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "2rem",
+                                color: theme.accent,
+                                fontFamily: "'Cormorant Garamond', serif",
+                                fontStyle: "italic",
+                                fontWeight: 600,
+                                letterSpacing: "0.02em",
+                              }}
+                            >
+                              {tpl.name.split(" ")[0]}
+                            </div>
+
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 14,
+                                marginBottom: 5,
+                              }}
+                            >
+                              {tpl.name}
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "rgba(255,255,255,0.45)",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {tpl.preview}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <ButtonRow>
+                      <button
+                        type="button"
+                        style={secondaryBtn}
+                        onClick={() => setStep(4)}
+                      >
+                        ← Volver
+                      </button>
+                      <button
+                        type="button"
+                        style={primaryBtn(!canGoStep6)}
+                        disabled={!canGoStep6}
+                        onClick={() => setStep(6)}
+                      >
+                        Continuar →
+                      </button>
+                    </ButtonRow>
+                  </section>
+                )}
+
+                {step === 6 && (
+                  <section>
                     <SectionTitle>Revisa tu momento</SectionTitle>
 
                     <div
@@ -1228,13 +1503,27 @@ export default function CreatePage() {
                         value={selectedTemplateData?.name ?? ""}
                       />
                       <ReviewRow label="Mensaje" value={shortMessage} />
+                      <ReviewRow
+                        label="Fotos"
+                        value={`${photos.length} seleccionadas`}
+                      />
+                      <ReviewRow
+                        label="Portada"
+                        value={
+                          coverPhotoId
+                            ? `Foto ${
+                                photos.findIndex((photo) => photo.id === coverPhotoId) + 1
+                              }`
+                            : "No definida"
+                        }
+                      />
                     </div>
 
                     <ButtonRow>
                       <button
                         type="button"
                         style={secondaryBtn}
-                        onClick={() => setStep(4)}
+                        onClick={() => setStep(5)}
                       >
                         ← Volver
                       </button>
@@ -1242,7 +1531,7 @@ export default function CreatePage() {
                         type="button"
                         style={primaryBtn(false)}
                         onClick={() =>
-                          alert("Siguiente paso: fotos, portada y pago.")
+                          alert("Siguiente paso: generar slug, guardar datos y pago.")
                         }
                       >
                         {theme.icon} Crear mi sorpresa
@@ -1275,7 +1564,7 @@ export default function CreatePage() {
                   height: 210,
                   borderRadius: 22,
                   background: theme.thumbGrad,
-                  border: `1px solid rgba(255,255,255,0.06)`,
+                  border: "1px solid rgba(255,255,255,0.06)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1311,6 +1600,38 @@ export default function CreatePage() {
                   {eventLabel(eventType)}
                 </span>
               </div>
+
+              {photos.length > 0 && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 8,
+                    marginBottom: 16,
+                  }}
+                >
+                  {photos.slice(0, 3).map((photo) => (
+                    <div
+                      key={photo.id}
+                      style={{
+                        aspectRatio: "1 / 1",
+                        borderRadius: 12,
+                        backgroundImage: `url(${photo.url})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        border:
+                          coverPhotoId === photo.id
+                            ? `1px solid ${theme.accent}`
+                            : "1px solid rgba(255,255,255,0.08)",
+                        boxShadow:
+                          coverPhotoId === photo.id
+                            ? `0 0 12px ${theme.accentGlow}`
+                            : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               <div
                 style={{
@@ -1369,6 +1690,7 @@ export default function CreatePage() {
                   ["Recibe", recipientName || "—"],
                   ["Envía", senderName || "—"],
                   ["Template", selectedTemplateData?.name ?? "—"],
+                  ["Fotos", `${photos.length}`],
                 ].map(([k, v]) => (
                   <div
                     key={k}
