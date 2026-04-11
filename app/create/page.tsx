@@ -27,8 +27,8 @@ type PhotoItem = {
 
 const templates: Template[] = [
   {
-    id: "romantic-pink",
-    name: "Romantic Pink",
+    id: "romantic-letter",
+    name: "Romantic Letter",
     event: "amor",
     plans: ["basic", "premium"],
     preview: "Romántico, suave y lleno de detalles delicados.",
@@ -429,6 +429,48 @@ export default function CreatePage() {
       setCoverPhotoId(updated[0]?.id || "");
     }
   }
+  function normalizeName(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+function generateShortId(length = 6) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+
+function handleCreatePreview() {
+  const shortId = generateShortId();
+  const normalizedRecipient = normalizeName(recipientName || "momentia");
+  const slug = `${shortId}-${normalizedRecipient}`;
+
+  const coverPhoto =
+    photos.find((photo) => photo.id === coverPhotoId) || photos[0] || null;
+
+  const previewData = {
+    slug,
+    plan,
+    eventType,
+    recipientName,
+    senderName,
+    shortMessage,
+    selectedTemplate: selectedTemplateData?.name || selectedTemplate,
+    coverPhotoUrl: coverPhoto?.url || "",
+    photoUrls: photos.map((photo) => photo.url),
+  };
+
+  sessionStorage.setItem("momentia_preview", JSON.stringify(previewData));
+  window.location.href = `/p/${slug}`;
+}
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -1530,9 +1572,7 @@ export default function CreatePage() {
                       <button
                         type="button"
                         style={primaryBtn(false)}
-                        onClick={() =>
-                          alert("Siguiente paso: generar slug, guardar datos y pago.")
-                        }
+                        onClick={handleCreatePreview}
                       >
                         {theme.icon} Crear mi sorpresa
                       </button>

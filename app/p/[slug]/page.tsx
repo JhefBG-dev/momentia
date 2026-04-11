@@ -1,59 +1,66 @@
-type PageProps = {
-  params: Promise<{ slug: string }>;
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import TemplateRenderer from "@/components/templates/TemplateRenderer";
+
+type PreviewData = {
+  slug: string;
+  plan: "basic" | "premium";
+  eventType: "amor" | "cumpleanos" | "aniversario" | "dia-de-la-madre" | "navidad";
+  recipientName: string;
+  senderName: string;
+  shortMessage: string;
+  selectedTemplate: string;
+  coverPhotoUrl: string;
+  photoUrls: string[];
 };
 
-export default async function SurprisePage({ params }: PageProps) {
-  const { slug } = await params;
+export default function SurprisePage() {
+  const params = useParams();
+  const slug = String(params.slug ?? "");
+  const [data, setData] = useState<PreviewData | null>(null);
 
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(180deg, #000000 0%, #120014 45%, #220022 100%)",
-        color: "white",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "24px",
-        textAlign: "center",
-      }}
-    >
-      <div
+  useEffect(() => {
+    const raw = sessionStorage.getItem("momentia_preview");
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as PreviewData;
+
+      if (parsed.slug === slug) {
+        setData(parsed);
+      }
+    } catch (error) {
+      console.error("Error leyendo preview:", error);
+    }
+  }, [slug]);
+
+  if (!data) {
+    return (
+      <main
         style={{
-          maxWidth: "720px",
-          width: "100%",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: "24px",
-          padding: "40px 24px",
-          background: "rgba(255,255,255,0.04)",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#050505",
+          color: "white",
+          padding: "24px",
+          textAlign: "center",
         }}
       >
-        <p style={{ opacity: 0.75, marginBottom: "8px" }}>Momentia ✨</p>
-
-        <h1 style={{ fontSize: "3rem", marginBottom: "16px" }}>
-          Para {slug} 💖
-        </h1>
-
-        <p style={{ fontSize: "1.2rem", lineHeight: 1.6, marginBottom: "24px" }}>
-          Este es un recuerdo digital creado especialmente para ti.
-        </p>
-
-        <div
-          style={{
-            borderRadius: "18px",
-            padding: "20px",
-            background: "rgba(255,255,255,0.06)",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: "1.05rem", lineHeight: 1.8 }}>
-            “Hoy no quería darte algo común.
-            <br />
-            Quería darte un momento.”
+        <div>
+          <h1 style={{ fontSize: "2rem", marginBottom: "12px" }}>
+            Momentia
+          </h1>
+          <p style={{ opacity: 0.75 }}>
+            No se encontró una vista previa para este enlace.
           </p>
         </div>
-      </div>
-    </main>
-  );
+      </main>
+    );
+  }
+
+  return <TemplateRenderer data={data} />;
 }
