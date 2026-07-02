@@ -27,56 +27,12 @@ body {
   flex-direction: column;
 }
 
-/* glows */
-.glow {
-  position: absolute;
-  width: 480px;
-  height: 480px;
-  border-radius: 50%;
-  filter: blur(90px);
+/* fondo real (reemplaza los glows/deco SVG de placeholder) */
+.bgImage {
+  z-index: 0;
+  object-fit: cover;
+  object-position: center;
   pointer-events: none;
-  opacity: 0.28;
-}
-.glowLeft {
-  left: -220px;
-  top: 120px;
-  background: radial-gradient(circle, #ffb25a, transparent 70%);
-}
-.glowRight {
-  right: -220px;
-  top: 260px;
-  background: radial-gradient(circle, #ff7d97, transparent 70%);
-}
-
-.deco {
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  pointer-events: none;
-}
-.decoLeft {
-  left: 12px;
-  top: 220px;
-}
-.decoRight {
-  right: 12px;
-  top: 300px;
-}
-.decoBlob {
-  position: absolute;
-  inset: 30px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 178, 90, 0.35),
-    transparent 70%
-  );
-  filter: blur(20px);
-}
-.decoSvg {
-  position: relative;
-  width: 100%;
-  height: 100%;
 }
 
 /* nav */
@@ -352,9 +308,6 @@ body {
     padding: 22px 18px 40px;
   }
   .navLinks {
-    display: none;
-  }
-  .deco {
     display: none;
   }
   .pricing {

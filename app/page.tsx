@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Playfair_Display, Inter } from "next/font/google";
 import styles from "./page.module.css";
 
@@ -151,69 +152,15 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 export default function Home() {
   return (
     <main className={`${playfair.variable} ${inter.variable} ${styles.page}`}>
-      {/* glows */}
-      <div className={`${styles.glow} ${styles.glowLeft}`} aria-hidden="true" />
-      <div className={`${styles.glow} ${styles.glowRight}`} aria-hidden="true" />
-
-      {/* decorative envelope, left */}
-      <div className={`${styles.deco} ${styles.decoLeft}`} aria-hidden="true">
-        <div className={styles.decoBlob} />
-        <svg viewBox="0 0 220 220" className={styles.decoSvg}>
-          <rect
-            x="30"
-            y="70"
-            width="150"
-            height="105"
-            rx="10"
-            fill="none"
-            stroke="rgba(224,164,88,0.55)"
-            strokeWidth="1.4"
-          />
-          <path
-            d="M32 76 105 135 178 76"
-            fill="none"
-            stroke="rgba(224,164,88,0.55)"
-            strokeWidth="1.4"
-          />
-          <path
-            d="M105 118c-8-10-24-8-24 4 0 10 12 16 24 26 12-10 24-16 24-26 0-12-16-14-24-4Z"
-            fill="rgba(255,125,151,0.55)"
-          />
-        </svg>
-      </div>
-
-      {/* decorative gift box, right */}
-      <div className={`${styles.deco} ${styles.decoRight}`} aria-hidden="true">
-        <div className={styles.decoBlob} />
-        <svg viewBox="0 0 220 220" className={styles.decoSvg}>
-          <rect
-            x="35"
-            y="95"
-            width="150"
-            height="90"
-            rx="8"
-            fill="none"
-            stroke="rgba(224,164,88,0.55)"
-            strokeWidth="1.4"
-          />
-          <path
-            d="M35 120h150"
-            stroke="rgba(224,164,88,0.55)"
-            strokeWidth="1.4"
-          />
-          <path
-            d="M110 95v90"
-            stroke="rgba(224,164,88,0.55)"
-            strokeWidth="1.4"
-          />
-          <path
-            d="M110 95c-6-14-32-16-32-1s26 15 32 1c6 14 32 16 32 1s-26-15-32-1Z"
-            fill="none"
-            stroke="rgba(255,178,90,0.6)"
-            strokeWidth="1.4"
-          />
-        </svg>
-      </div>
+      {/* fondo real */}
+      <Image
+        src="/fondo.png"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className={styles.bgImage}
+      />
 
       {/* nav */}
       <header className={styles.nav}>
