@@ -1,4 +1,5 @@
 import { Playfair_Display, Inter } from "next/font/google";
+import styles from "./page.module.css";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -149,15 +150,15 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 
 export default function Home() {
   return (
-    <main className={`${playfair.variable} ${inter.variable} page`}>
+    <main className={`${playfair.variable} ${inter.variable} ${styles.page}`}>
       {/* glows */}
-      <div className="glow glow-left" aria-hidden="true" />
-      <div className="glow glow-right" aria-hidden="true" />
+      <div className={`${styles.glow} ${styles.glowLeft}`} aria-hidden="true" />
+      <div className={`${styles.glow} ${styles.glowRight}`} aria-hidden="true" />
 
       {/* decorative envelope, left */}
-      <div className="deco deco-left" aria-hidden="true">
-        <div className="deco-blob" />
-        <svg viewBox="0 0 220 220" className="deco-svg">
+      <div className={`${styles.deco} ${styles.decoLeft}`} aria-hidden="true">
+        <div className={styles.decoBlob} />
+        <svg viewBox="0 0 220 220" className={styles.decoSvg}>
           <rect
             x="30"
             y="70"
@@ -182,9 +183,9 @@ export default function Home() {
       </div>
 
       {/* decorative gift box, right */}
-      <div className="deco deco-right" aria-hidden="true">
-        <div className="deco-blob" />
-        <svg viewBox="0 0 220 220" className="deco-svg">
+      <div className={`${styles.deco} ${styles.decoRight}`} aria-hidden="true">
+        <div className={styles.decoBlob} />
+        <svg viewBox="0 0 220 220" className={styles.decoSvg}>
           <rect
             x="35"
             y="95"
@@ -215,47 +216,49 @@ export default function Home() {
       </div>
 
       {/* nav */}
-      <header className="nav">
-        <div className="brand">
+      <header className={styles.nav}>
+        <div className={styles.brand}>
           <Icon name="envelope" size={22} />
           <span>Momentia</span>
         </div>
 
-        <nav className="nav-links">
+        <nav className={styles.navLinks}>
           {NAV_LINKS.map((item) => (
-            <a href="#" key={item.label} className="nav-link">
+            <a href="#" key={item.label} className={styles.navLink}>
               <Icon name={item.icon} size={16} />
               {item.label}
             </a>
           ))}
         </nav>
 
-        <button className="login-btn" type="button">
+        <button className={styles.loginBtn} type="button">
           <Icon name="user" size={15} />
           Iniciar sesión
         </button>
       </header>
 
       {/* hero */}
-      <section className="hero">
-        <span className="eyebrow">✦ Para cada historia, un momento único</span>
+      <section className={styles.hero}>
+        <span className={styles.eyebrow}>
+          ✦ Para cada historia, un momento único
+        </span>
 
-        <h1 className="headline">
+        <h1 className={styles.headline}>
           Experiencias digitales
           <br />
-          que <span className="grad-text">se sienten</span>
+          que <span className={styles.gradText}>se sienten</span>
         </h1>
 
-        <p className="subtitle">
+        <p className={styles.subtitle}>
           Crea regalos personalizados para cumpleaños, aniversarios,
-          <br className="br-desktop" />
+          <br className={styles.brDesktop} />
           Día de la Madre, Navidad y cualquier ocasión especial.
         </p>
 
-        <ul className="feature-row">
+        <ul className={styles.featureRow}>
           {FEATURES.map((f) => (
-            <li key={f.title} className="feature-item">
-              <span className="feature-icon">
+            <li key={f.title} className={styles.featureItem}>
+              <span className={styles.featureIcon}>
                 <Icon name={f.icon} size={17} />
               </span>
               <span>
@@ -267,30 +270,32 @@ export default function Home() {
         </ul>
 
         {/* pricing */}
-        <div className="pricing">
-          <div className="plan">
-            <div className="plan-badge-icon">
+        <div className={styles.pricing}>
+          <div className={styles.plan}>
+            <div className={styles.planBadgeIcon}>
               <Icon name="envelope" size={20} />
             </div>
-            <span className="plan-name">Basic</span>
-            <span className="plan-price">$3</span>
-            <p className="plan-desc">
+            <span className={styles.planName}>Basic</span>
+            <span className={styles.planPrice}>$3</span>
+            <p className={styles.planDesc}>
               Diseño bonito, mensaje personalizado y link activo por 90 días.
             </p>
-            <a href="/create" className="plan-cta plan-cta-outline">
+            <a href="/create" className={`${styles.planCta} ${styles.planCtaOutline}`}>
               Elegir Basic
             </a>
           </div>
 
-          <div className="plan plan-premium">
-            <span className="plan-pill">Más popular</span>
-            <div className="plan-badge-icon plan-badge-icon-premium">
+          <div className={`${styles.plan} ${styles.planPremium}`}>
+            <span className={styles.planPill}>Más popular</span>
+            <div className={`${styles.planBadgeIcon} ${styles.planBadgeIconPremium}`}>
               <Icon name="star" size={20} />
             </div>
-            <span className="plan-name">Premium</span>
-            <span className="plan-price">$5</span>
-            <p className="plan-desc">Más fotos, más emoción y link permanente.</p>
-            <a href="/create" className="plan-cta plan-cta-filled">
+            <span className={styles.planName}>Premium</span>
+            <span className={styles.planPrice}>$5</span>
+            <p className={styles.planDesc}>
+              Más fotos, más emoción y link permanente.
+            </p>
+            <a href="/create" className={`${styles.planCta} ${styles.planCtaFilled}`}>
               Elegir Premium
             </a>
           </div>
@@ -298,388 +303,14 @@ export default function Home() {
       </section>
 
       {/* trust bar */}
-      <footer className="trust-bar">
+      <footer className={styles.trustBar}>
         {TRUST_ITEMS.map((t) => (
-          <span className="trust-item" key={t.label}>
+          <span className={styles.trustItem} key={t.label}>
             <Icon name={t.icon} size={15} />
             {t.label}
           </span>
         ))}
       </footer>
-
-      <style jsx global>{`
-        :root {
-          --bg: #0b0a09;
-          --card: #14120f;
-          --border: #2a251d;
-          --text: #f3ece0;
-          --text-muted: #9a9186;
-          --gold: #e0a458;
-          --pink: #ff7d97;
-          --grad: linear-gradient(135deg, #ffb25a, #ff7d97);
-        }
-        html,
-        body {
-          background: var(--bg);
-          margin: 0;
-        }
-      `}</style>
-
-      <style jsx>{`
-        .page {
-          position: relative;
-          min-height: 100vh;
-          overflow: hidden;
-          background: var(--bg);
-          color: var(--text);
-          font-family: var(--font-body), system-ui, sans-serif;
-          padding: 28px 40px 60px;
-          display: flex;
-          flex-direction: column;
-        }
-
-        /* glows */
-        .glow {
-          position: absolute;
-          width: 480px;
-          height: 480px;
-          border-radius: 50%;
-          filter: blur(90px);
-          pointer-events: none;
-          opacity: 0.28;
-        }
-        .glow-left {
-          left: -220px;
-          top: 120px;
-          background: radial-gradient(circle, #ffb25a, transparent 70%);
-        }
-        .glow-right {
-          right: -220px;
-          top: 260px;
-          background: radial-gradient(circle, #ff7d97, transparent 70%);
-        }
-
-        .deco {
-          position: absolute;
-          width: 220px;
-          height: 220px;
-          pointer-events: none;
-        }
-        .deco-left {
-          left: 12px;
-          top: 220px;
-        }
-        .deco-right {
-          right: 12px;
-          top: 300px;
-        }
-        .deco-blob {
-          position: absolute;
-          inset: 30px;
-          border-radius: 50%;
-          background: radial-gradient(
-            circle,
-            rgba(255, 178, 90, 0.35),
-            transparent 70%
-          );
-          filter: blur(20px);
-        }
-        .deco-svg {
-          position: relative;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* nav */
-        .nav {
-          position: relative;
-          z-index: 2;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 24px;
-          margin-bottom: 64px;
-        }
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-family: var(--font-display), serif;
-          font-weight: 800;
-          font-size: 1.3rem;
-          color: var(--gold);
-        }
-        .nav-links {
-          display: flex;
-          gap: 28px;
-        }
-        .nav-link {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: var(--text-muted);
-          text-decoration: none;
-          font-size: 0.9rem;
-          font-weight: 500;
-          transition: color 0.2s ease;
-        }
-        .nav-link:hover {
-          color: var(--gold);
-        }
-        .login-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: transparent;
-          color: var(--text);
-          border: 1px solid var(--border);
-          border-radius: 999px;
-          padding: 9px 18px;
-          font-size: 0.85rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: border-color 0.2s ease, background 0.2s ease;
-        }
-        .login-btn:hover {
-          border-color: var(--gold);
-          background: rgba(224, 164, 88, 0.08);
-        }
-
-        /* hero */
-        .hero {
-          position: relative;
-          z-index: 2;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          max-width: 760px;
-          margin: 0 auto;
-        }
-        .eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          border: 1px solid var(--border);
-          background: rgba(224, 164, 88, 0.08);
-          color: var(--gold);
-          border-radius: 999px;
-          padding: 7px 18px;
-          font-size: 0.78rem;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          margin-bottom: 28px;
-        }
-        .headline {
-          font-family: var(--font-display), serif;
-          font-weight: 800;
-          font-size: clamp(2.4rem, 5.5vw, 3.6rem);
-          line-height: 1.12;
-          margin: 0 0 22px;
-        }
-        .grad-text {
-          background: var(--grad);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-        .subtitle {
-          color: var(--text-muted);
-          font-size: 1.05rem;
-          line-height: 1.6;
-          max-width: 560px;
-          margin: 0 0 38px;
-        }
-        .br-desktop {
-          display: block;
-        }
-
-        .feature-row {
-          list-style: none;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 32px;
-          padding: 0;
-          margin: 0 0 48px;
-        }
-        .feature-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-align: left;
-        }
-        .feature-item strong {
-          display: block;
-          font-size: 0.9rem;
-          font-weight: 600;
-        }
-        .feature-item em {
-          display: block;
-          font-style: normal;
-          font-size: 0.78rem;
-          color: var(--text-muted);
-        }
-        .feature-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: rgba(224, 164, 88, 0.1);
-          color: var(--gold);
-          flex-shrink: 0;
-        }
-
-        /* pricing */
-        .pricing {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 22px;
-          width: 100%;
-          max-width: 700px;
-        }
-        .plan {
-          position: relative;
-          background: var(--card);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          padding: 30px 26px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          transition: transform 0.25s ease, border-color 0.25s ease;
-        }
-        .plan:hover {
-          transform: translateY(-4px);
-          border-color: var(--gold);
-        }
-        .plan-premium {
-          border-color: rgba(255, 125, 151, 0.5);
-        }
-        .plan-premium:hover {
-          border-color: var(--pink);
-        }
-        .plan-pill {
-          position: absolute;
-          top: -13px;
-          background: var(--grad);
-          color: #1a0e0a;
-          font-size: 0.68rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          padding: 5px 14px;
-          border-radius: 999px;
-        }
-        .plan-badge-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(224, 164, 88, 0.1);
-          color: var(--gold);
-          margin-bottom: 14px;
-        }
-        .plan-badge-icon-premium {
-          background: rgba(255, 125, 151, 0.12);
-          color: var(--pink);
-        }
-        .plan-name {
-          font-family: var(--font-display), serif;
-          font-size: 0.85rem;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: var(--text-muted);
-          margin-bottom: 6px;
-        }
-        .plan-price {
-          font-family: var(--font-display), serif;
-          font-size: 2.4rem;
-          font-weight: 800;
-          margin-bottom: 14px;
-        }
-        .plan-desc {
-          color: var(--text-muted);
-          font-size: 0.9rem;
-          line-height: 1.55;
-          margin: 0 0 24px;
-          min-height: 48px;
-        }
-        .plan-cta {
-          width: 100%;
-          padding: 13px 18px;
-          border-radius: 12px;
-          font-weight: 600;
-          font-size: 0.92rem;
-          text-decoration: none;
-          transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        .plan-cta:hover {
-          transform: translateY(-1px);
-          opacity: 0.92;
-        }
-        .plan-cta-outline {
-          border: 1px solid var(--gold);
-          color: var(--gold);
-          background: transparent;
-        }
-        .plan-cta-filled {
-          border: none;
-          background: var(--grad);
-          color: #1a0e0a;
-        }
-
-        /* trust bar */
-        .trust-bar {
-          position: relative;
-          z-index: 2;
-          margin: 56px auto 0;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 28px;
-          background: var(--card);
-          border: 1px solid var(--border);
-          border-radius: 999px;
-          padding: 16px 34px;
-          width: fit-content;
-        }
-        .trust-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.85rem;
-          color: var(--text-muted);
-        }
-
-        @media (max-width: 760px) {
-          .page {
-            padding: 22px 18px 40px;
-          }
-          .nav-links {
-            display: none;
-          }
-          .deco {
-            display: none;
-          }
-          .pricing {
-            grid-template-columns: 1fr;
-          }
-          .br-desktop {
-            display: inline;
-          }
-          .trust-bar {
-            border-radius: 20px;
-            padding: 16px 20px;
-          }
-        }
-      `}</style>
     </main>
   );
 }
