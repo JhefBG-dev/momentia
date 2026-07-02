@@ -5,12 +5,16 @@ type TemplateRendererProps = {
 };
 
 export default function TemplateRenderer({ data }: TemplateRendererProps) {
-  const templates: Record<string, React.ComponentType<{ data: any }>> = {
+  const templates: Record<string, React.ComponentType<{ data?: any }>> = {
     "romantic-letter": RomanticLetter,
   };
 
-  const SelectedTemplate =
-    templates[data.selectedTemplate] || RomanticLetter;
+  const templateKey =
+    data?.selectedTemplate ||
+    data?.templateId ||
+    "romantic-letter";
+
+  const SelectedTemplate = templates[templateKey] || RomanticLetter;
 
   return <SelectedTemplate data={data} />;
 }

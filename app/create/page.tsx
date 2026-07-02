@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 
 /* ─────────────────────────────────────────────
    TYPES
@@ -19,9 +19,9 @@ type TemplateId =
 
 type PhotoItem = {
   id: string;
+  file: File;
   url: string;
   caption: string;
-  fileName: string;
 };
 
 /* ─────────────────────────────────────────────
@@ -232,58 +232,6 @@ function extractYouTubeId(url: string): string | null {
   } catch { return null; }
 }
 
-
-const PREVIEW_STORAGE_KEY = "momentia_preview";
-const IMAGE_MAX_SIDE = 1600;
-const IMAGE_QUALITY = 0.86;
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("No se pudo leer la imagen."));
-    reader.readAsDataURL(file);
-  });
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("No se pudo cargar la imagen."));
-    img.src = src;
-  });
-}
-
-async function serializeImage(file: File): Promise<string> {
-  const source = await readFileAsDataUrl(file);
-
-  if (!file.type.startsWith("image/")) return source;
-  if (file.type === "image/gif" || file.type === "image/svg+xml") return source;
-
-  try {
-    const img = await loadImage(source);
-    const largestSide = Math.max(img.width, img.height);
-
-    if (largestSide <= IMAGE_MAX_SIDE && source.length < 1_500_000) {
-      return source;
-    }
-
-    const scale = IMAGE_MAX_SIDE / largestSide;
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(img.width * scale));
-    canvas.height = Math.max(1, Math.round(img.height * scale));
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return source;
-
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
-  } catch {
-    return source;
-  }
-}
-
 /* ─────────────────────────────────────────────
    PARTICLE CANVAS — changes color per event
 ───────────────────────────────────────────── */
@@ -395,6 +343,76 @@ function generateShortId(n = 6) {
   return Array.from({ length: n }, () => c[Math.floor(Math.random() * c.length)]).join("");
 }
 
+const PREVIEW_DB_NAME = "momentia_preview_db";
+const PREVIEW_STORE_NAME = "previews";
+const PREVIEW_MANIFEST_KEY = "momentia_preview_manifest";
+const NAME_MAX = 20;
+const NICKNAME_MAX = 20;
+
+function clampText(value: string, max: number) {
+  return value.slice(0, max);
+}
+
+function getSongLabel(url: string) {
+  const id = extractYouTubeId(url);
+  return id ? "YouTube · canción seleccionada" : "";
+}
+
+function openPreviewDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(PREVIEW_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(PREVIEW_STORE_NAME)) {
+        db.createObjectStore(PREVIEW_STORE_NAME, { keyPath: "slug" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function savePreviewData(data: MomentiaPreviewData) {
+  const db = await openPreviewDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(PREVIEW_STORE_NAME, "readwrite");
+    tx.objectStore(PREVIEW_STORE_NAME).put(data);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+  db.close();
+}
+
+async function fileToDataUrl(file: File, maxSize = 1400, quality = 0.82): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * ratio));
+  const height = Math.max(1, Math.round(img.height * ratio));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
 /* ─────────────────────────────────────────────
    MOMENTIA PREVIEW DATA TYPE
    (the object that gets passed to the template)
@@ -408,15 +426,15 @@ export type MomentiaPreviewData = {
   senderName: string;
   nickname: string;
   message: string;
-  shortMessage: string;
   letterMessage: string;
   finalMessage: string;
   relationshipStartDate: string;
   musicUrl: string;
+  songLabel: string;
+  isPremium: boolean;
   coverPhotoUrl: string;
   photoUrls: string[];
   photoCaptions: string[];
-  isPremium: boolean;
 };
 
 /* ─────────────────────────────────────────────
@@ -452,12 +470,12 @@ export default function CreatePage() {
   const [nickname, setNickname] = useState("");
   const [startDate, setStartDate] = useState("");
   const [musicUrl, setMusicUrl] = useState("");
+  const [finalMessage, setFinalMessage] = useState("");
 
   // ── Photos ──
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [coverPhotoId, setCoverPhotoId] = useState("");
   const [photoError, setPhotoError] = useState("");
-  const [photoProcessing, setPhotoProcessing] = useState(false);
 
   const theme = selectedEvent ? EVENT_THEMES[selectedEvent] : EVENT_THEMES.amor;
   const PHOTO_MAX = plan === "basic" ? 5 : 12;
@@ -471,47 +489,26 @@ export default function CreatePage() {
   const frasesStep = 4;
 
   const canStep3 = recipientName.trim().length > 0 && senderName.trim().length > 0 && message.trim().length > 0;
-  const canStep4 = photos.length >= 1 && !photoProcessing;
-  const canStep5 = !photoProcessing && photos.every(p => p.caption.trim().length > 0);
+  const canStep4 = photos.length >= 1;
+  const canStep5 = photos.every(p => p.caption.trim().length > 0);
 
-  async function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
+  useEffect(() => { return () => { photos.forEach(p => URL.revokeObjectURL(p.url)); }; }, [photos]);
+
+  function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []) as File[];
     if (!files.length) return;
-
     const available = PHOTO_MAX - photos.length;
-    if (available <= 0) {
-      setPhotoError(`Máximo ${PHOTO_MAX} fotos.`);
-      e.target.value = "";
-      return;
-    }
-
-    setPhotoProcessing(true);
-    setPhotoError("");
-
-    try {
-      const mapped: PhotoItem[] = await Promise.all(
-        files.slice(0, available).map(async (file) => ({
-          id: crypto.randomUUID(),
-          fileName: file.name,
-          url: await serializeImage(file),
-          caption: "",
-        }))
-      );
-
-      const updated = [...photos, ...mapped];
-      setPhotos(updated);
-      if (!coverPhotoId && updated.length > 0) setCoverPhotoId(updated[0].id);
-    } catch {
-      setPhotoError("No se pudieron procesar una o más fotos. Intenta con otras imágenes.");
-    } finally {
-      setPhotoProcessing(false);
-      e.target.value = "";
-    }
+    if (available <= 0) { setPhotoError(`Máximo ${PHOTO_MAX} fotos.`); e.target.value = ""; return; }
+    const mapped: PhotoItem[] = files.slice(0, available).map(file => ({ id: crypto.randomUUID(), file, url: URL.createObjectURL(file), caption: "" }));
+    const updated = [...photos, ...mapped];
+    setPhotos(updated); setPhotoError("");
+    if (!coverPhotoId && updated.length > 0) setCoverPhotoId(updated[0].id);
+    e.target.value = "";
   }
 
   function removePhoto(id: string) {
-    const updated = photos.filter(p => p.id !== id);
-    setPhotos(updated);
+    const t = photos.find(p => p.id === id); if (t) URL.revokeObjectURL(t.url);
+    const updated = photos.filter(p => p.id !== id); setPhotos(updated);
     if (coverPhotoId === id) setCoverPhotoId(updated[0]?.id || "");
   }
 
@@ -527,36 +524,43 @@ export default function CreatePage() {
     setSelectedTemplate(tpl); setFormStep(1); setPlan("basic"); setPage("fill-form");
   }
 
-  function handleCreatePreview() {
-    if (!selectedEvent || !selectedTemplate || photoProcessing) return;
+  async function handleCreatePreview() {
+    if (!selectedEvent || !selectedTemplate) return;
 
-    const shortId = generateShortId();
-    const slug = `${shortId}-${normalizeName(recipientName || "momentia")}`;
-    const coverPhoto = photos.find(p => p.id === coverPhotoId) || photos[0] || null;
+    try {
+      const shortId = generateShortId();
+      const safeName = normalizeName(recipientName || "momentia") || "momentia";
+      const slug = `${shortId}-${safeName}`;
+      const coverIndex = Math.max(0, photos.findIndex(p => p.id === coverPhotoId));
+      const serializedPhotos = await Promise.all(photos.map(p => fileToDataUrl(p.file)));
 
-    const previewData: MomentiaPreviewData = {
-      slug,
-      plan,
-      eventType: selectedEvent,
-      templateId: selectedTemplate.id,
-      recipientName,
-      senderName,
-      nickname,
-      message,
-      shortMessage: message,
-      letterMessage: message,
-      finalMessage: "Gracias por formar parte de mi vida y por hacer más bonito todo lo que siento cuando estoy contigo.",
-      relationshipStartDate: startDate,
-      musicUrl: musicValid ? musicUrl.trim() : "",
-      coverPhotoUrl: coverPhoto?.url || "",
-      photoUrls: photos.map((p) => p.url),
-      photoCaptions: plan === "premium" ? photos.map((p) => p.caption.trim()) : [],
-      isPremium: plan === "premium",
-    };
+      const previewData: MomentiaPreviewData = {
+        slug,
+        plan,
+        eventType: selectedEvent,
+        templateId: selectedTemplate.id,
+        recipientName: recipientName.trim(),
+        senderName: senderName.trim(),
+        nickname: nickname.trim(),
+        message: message.trim(),
+        letterMessage: message.trim(),
+        finalMessage: finalMessage.trim(),
+        relationshipStartDate: startDate,
+        musicUrl: musicValid ? musicUrl.trim() : "",
+        songLabel: musicValid ? getSongLabel(musicUrl) : "",
+        isPremium: plan === "premium",
+        coverPhotoUrl: serializedPhotos[coverIndex] || serializedPhotos[0] || "",
+        photoUrls: serializedPhotos,
+        photoCaptions: plan === "premium" ? photos.map(p => p.caption.trim()) : [],
+      };
 
-    sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(previewData));
-    sessionStorage.setItem(`${PREVIEW_STORAGE_KEY}:${slug}`, JSON.stringify(previewData));
-    window.location.assign(`/p/${slug}`);
+      await savePreviewData(previewData);
+      sessionStorage.setItem(PREVIEW_MANIFEST_KEY, JSON.stringify({ slug, updatedAt: Date.now() }));
+      window.location.assign(`/p/${slug}`);
+    } catch (error) {
+      console.error("No se pudo crear la vista previa", error);
+      alert("No se pudo crear la sorpresa. Prueba con menos fotos o imágenes más livianas.");
+    }
   }
 
   // ── Shared styles ──
@@ -605,7 +609,7 @@ export default function CreatePage() {
         .fade-up { animation: fadeUp 0.4s ease forwards; }
         .step-enter { animation: fadeUp 0.35s ease forwards; }
 
-        .mom-layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: start; }
+        .mom-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(290px, 0.85fr); gap: 22px; align-items: start; }
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
         .events-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -850,17 +854,20 @@ export default function CreatePage() {
                       <div className="two-col" style={{ marginBottom: 16 }}>
                         <div>
                           <Label>A quién va dedicado</Label>
-                          <input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Ej: Anita" style={inputStyle} />
+                          <input value={recipientName} maxLength={NAME_MAX} onChange={e => setRecipientName(clampText(e.target.value, NAME_MAX))} placeholder="Ej: Anita" style={inputStyle} />
+                          <div style={{ textAlign: "right", fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>{recipientName.length}/{NAME_MAX}</div>
                         </div>
                         <div>
                           <Label>De quién viene</Label>
-                          <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="Ej: Anthony" style={inputStyle} />
+                          <input value={senderName} maxLength={NAME_MAX} onChange={e => setSenderName(clampText(e.target.value, NAME_MAX))} placeholder="Ej: Anthony" style={inputStyle} />
+                          <div style={{ textAlign: "right", fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>{senderName.length}/{NAME_MAX}</div>
                         </div>
                       </div>
                       <div className="two-col" style={{ marginBottom: 16 }}>
                         <div>
                           <Label>Apodo de tu pareja</Label>
-                          <input value={nickname} onChange={e => setNickname(e.target.value)} placeholder="Ej: mi amor, Nita…" style={inputStyle} />
+                          <input value={nickname} maxLength={NICKNAME_MAX} onChange={e => setNickname(clampText(e.target.value, NICKNAME_MAX))} placeholder="Ej: mi amor, Nita…" style={inputStyle} />
+                          <div style={{ textAlign: "right", fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>{nickname.length}/{NICKNAME_MAX}</div>
                         </div>
                         <div>
                           <Label>Fecha de inicio de la relación</Label>
@@ -871,6 +878,11 @@ export default function CreatePage() {
                         <Label>Mensaje principal</Label>
                         <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Escribe desde el corazón…" rows={6} maxLength={500} style={{ ...inputStyle, resize: "none" }} />
                         <div style={{ textAlign: "right", fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>{message.length}/500</div>
+                      </div>
+                      <div style={{ marginBottom: plan === "premium" ? 16 : 0 }}>
+                        <Label>Mensaje final</Label>
+                        <textarea value={finalMessage} onChange={e => setFinalMessage(e.target.value)} placeholder="Tu cierre especial…" rows={4} maxLength={280} style={{ ...inputStyle, resize: "none" }} />
+                        <div style={{ textAlign: "right", fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'DM Mono', monospace", marginTop: 6 }}>{finalMessage.length}/280</div>
                       </div>
                       {plan === "premium" && (
                         <div>
@@ -902,16 +914,11 @@ export default function CreatePage() {
                       </InfoBox>
                       <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "28px 20px", borderRadius: 18, marginBottom: 18, cursor: "pointer", border: `1.5px dashed ${activeTheme.border}`, background: activeTheme.softBg, transition: "background 0.2s" }}>
                         <span style={{ fontSize: 26, color: activeTheme.accent }}>{activeTheme.icon}</span>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)" }}>
-                          {photoProcessing ? "Procesando fotos..." : "Toca para elegir fotos"}
-                        </span>
-                        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
-                          {photos.length} de {PHOTO_MAX} subidas{photoProcessing ? " · optimizando" : ""}
-                        </span>
-                        <input type="file" accept="image/*" multiple onChange={handlePhotosChange} disabled={photoProcessing} style={{ display: "none" }} />
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)" }}>Toca para elegir fotos</span>
+                        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>{photos.length} de {PHOTO_MAX} subidas</span>
+                        <input type="file" accept="image/*" multiple onChange={handlePhotosChange} style={{ display: "none" }} />
                       </label>
                       {photoError && <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.16)", color: "#ffb3b3", fontSize: 13 }}>{photoError}</div>}
-                      {photoProcessing && <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.68)", fontSize: 13 }}>Preparando imágenes para que sí viajen al template…</div>}
                       {photos.length > 0 && (
                         <div className="photo-grid">
                           {photos.map((photo, index) => {
@@ -981,6 +988,7 @@ export default function CreatePage() {
                         <ReviewRow label="Apodo" value={nickname || "No especificado"} />
                         <ReviewRow label="Inicio" value={startDate || "No especificada"} />
                         <ReviewRow label="Mensaje" value={message.length > 90 ? message.slice(0, 90) + "…" : message} />
+                        <ReviewRow label="Cierre" value={finalMessage.length > 90 ? finalMessage.slice(0, 90) + "…" : (finalMessage || "No especificado")} />
                         <ReviewRow label="Fotos" value={`${photos.length} · portada: foto ${photos.findIndex(p => p.id === coverPhotoId) + 1}`} />
                         {plan === "premium" && <>
                           <ReviewRow label="Frases" value={`${photos.filter(p => p.caption.trim()).length}/${photos.length}`} />
@@ -997,9 +1005,7 @@ export default function CreatePage() {
                       )}
                       <ButtonRow>
                         <button type="button" style={secondaryBtn} onClick={() => setFormStep(plan === "basic" ? 3 : frasesStep)}>← Volver</button>
-                        <button type="button" style={primaryBtn(photoProcessing)} disabled={photoProcessing} onClick={handleCreatePreview}>
-                          {photoProcessing ? "Procesando..." : `${activeTheme.icon} Crear mi sorpresa`}
-                        </button>
+                        <button type="button" style={primaryBtn(false)} onClick={handleCreatePreview}>{activeTheme.icon} Crear mi sorpresa</button>
                       </ButtonRow>
                     </section>
                   )}
@@ -1031,12 +1037,13 @@ export default function CreatePage() {
                     ["Plan", plan === "basic" ? "Basic — $3" : "Premium — $5"],
                     ["Para", recipientName || "—"],
                     ["Apodo", nickname || "—"],
-                    ["Fotos", `${photos.length} / ${PHOTO_MAX}${photoProcessing ? " · procesando" : ""}`],
+                    ["Fotos", `${photos.length} / ${PHOTO_MAX}`],
+                    ["Cierre", finalMessage || "—"],
                     ...(plan === "premium" ? [["Frases", `${photos.filter(p => p.caption.trim()).length}/${photos.length}`], ["Música", musicValid ? "✓" : "—"]] : []),
                   ] as [string, string][]).map(([k, v]) => (
-                    <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 12, gap: 10 }}>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>{k}</span>
-                      <span style={{ color: "rgba(255,255,255,0.75)", fontWeight: 500, textAlign: "right", wordBreak: "break-word" }}>{v}</span>
+                    <div key={k} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", alignItems: "start", padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 12, gap: 10 }}>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", paddingTop: 2 }}>{k}</span>
+                      <span style={{ color: "rgba(255,255,255,0.75)", fontWeight: 500, textAlign: "right", overflowWrap: "anywhere", wordBreak: "break-word", minWidth: 0 }}>{v}</span>
                     </div>
                   ))}
                 </div>

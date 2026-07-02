@@ -1,99 +1,685 @@
+import { Playfair_Display, Inter } from "next/font/google";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  variable: "--font-display",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-body",
+});
+
+const NAV_LINKS = [
+  { label: "Cumpleaños", icon: "gift" },
+  { label: "Aniversarios", icon: "heart" },
+  { label: "Día de la Madre", icon: "flower" },
+  { label: "Navidad", icon: "tree" },
+] as const;
+
+const FEATURES = [
+  {
+    icon: "user",
+    title: "100% Personalizado",
+    desc: "Cada detalle es tuyo",
+  },
+  {
+    icon: "bolt",
+    title: "Fácil y rápido",
+    desc: "Crea en minutos",
+  },
+  {
+    icon: "lock",
+    title: "Acceso ilimitado",
+    desc: "Guarda y comparte",
+  },
+  {
+    icon: "heart",
+    title: "Hecho con amor",
+    desc: "Para quien importa",
+  },
+] as const;
+
+const TRUST_ITEMS = [
+  { icon: "shield", label: "Pago seguro" },
+  { icon: "smile", label: "Miles de personas felices" },
+  { icon: "star", label: "Experiencias inolvidables" },
+] as const;
+
+function Icon({ name, size = 18 }: { name: string; size?: number }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  switch (name) {
+    case "gift":
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="9" width="17" height="11" rx="1.5" />
+          <path d="M3.5 12.5h17" />
+          <path d="M12 9v11" />
+          <path d="M12 9c-1.6 0-4-1-4-3.2S9.6 3 12 5c2.4-2 4-.4 4 1.8S13.6 9 12 9Z" />
+        </svg>
+      );
+    case "heart":
+      return (
+        <svg {...common}>
+          <path d="M12 20s-7.2-4.6-9.6-9C.7 7.6 2.4 4 6 4c2 0 3.4 1.1 4 2.2C10.6 5.1 12 4 14 4c3.6 0 5.3 3.6 3.6 7-2.4 4.4-9.6 9-9.6 9Z" />
+        </svg>
+      );
+    case "flower":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="2.3" />
+          <path d="M12 3.5c1.8 0 3 1.5 2.4 3.2A2.9 2.9 0 0 1 12 9.7a2.9 2.9 0 0 1-2.4-3c-.6-1.7.6-3.2 2.4-3.2Z" />
+          <path d="M12 20.5c1.8 0 3-1.5 2.4-3.2A2.9 2.9 0 0 0 12 14.3a2.9 2.9 0 0 0-2.4 3c-.6 1.7.6 3.2 2.4 3.2Z" />
+          <path d="M3.5 12c0-1.8 1.5-3 3.2-2.4A2.9 2.9 0 0 1 9.7 12a2.9 2.9 0 0 1-3 2.4c-1.7.6-3.2-.6-3.2-2.4Z" />
+          <path d="M20.5 12c0-1.8-1.5-3-3.2-2.4A2.9 2.9 0 0 0 14.3 12a2.9 2.9 0 0 0 3 2.4c1.7.6 3.2-.6 3.2-2.4Z" />
+        </svg>
+      );
+    case "tree":
+      return (
+        <svg {...common}>
+          <path d="M12 3 7.5 9.5h2.2L6 15.5h3.2L5.5 21h13l-3.7-5.5H18l-3.7-6h2.2Z" />
+          <path d="M12 21v-3.5" />
+        </svg>
+      );
+    case "user":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="8" r="3.4" />
+          <path d="M5 20c1-3.6 3.9-5.5 7-5.5s6 1.9 7 5.5" />
+        </svg>
+      );
+    case "bolt":
+      return (
+        <svg {...common}>
+          <path d="M12.5 3 5 13h5.5L11 21l7.5-10H13l-.5-8Z" />
+        </svg>
+      );
+    case "lock":
+      return (
+        <svg {...common}>
+          <rect x="5" y="10.5" width="14" height="9.5" rx="1.8" />
+          <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v6c0 4.5-3 7.7-7 8.5-4-.8-7-4-7-8.5V6Z" />
+          <path d="m9.2 12 1.9 1.9 3.7-3.9" />
+        </svg>
+      );
+    case "smile":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8.3" />
+          <path d="M8.3 14c.9 1.4 2.2 2.1 3.7 2.1S14.8 15.4 15.7 14" />
+          <path d="M8.7 9.7h.01" />
+          <path d="M15.3 9.7h.01" />
+        </svg>
+      );
+    case "star":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 14.3 9l6 .6-4.5 4 1.3 5.9L12 16.7 6.9 19.5l1.3-5.9-4.5-4 6-.6Z" />
+        </svg>
+      );
+    case "envelope":
+      return (
+        <svg {...common}>
+          <rect x="3" y="5.5" width="18" height="13" rx="1.8" />
+          <path d="m4 7 8 6 8-6" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function Home() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "black",
-        color: "white",
-        textAlign: "center",
-        padding: "24px",
-      }}
-    >
-      <h1 style={{ fontSize: "3rem", marginBottom: "12px" }}>
-        Momentia 💖
-      </h1>
+    <main className={`${playfair.variable} ${inter.variable} page`}>
+      {/* glows */}
+      <div className="glow glow-left" aria-hidden="true" />
+      <div className="glow glow-right" aria-hidden="true" />
 
-      <p style={{ maxWidth: "600px", marginBottom: "32px" }}>
-        Regalos digitales personalizados para cumpleaños, aniversarios, Día de la
-        Madre, Navidad y momentos especiales.
-      </p>
-
-      <div
-        style={{
-          display: "grid",
-          gap: "20px",
-          maxWidth: "500px",
-          width: "100%",
-        }}
-      >
-        {/* BASIC */}
-        <div
-          style={{
-            border: "1px solid #333",
-            borderRadius: "16px",
-            padding: "20px",
-            background: "#111",
-          }}
-        >
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
-            Basic — $3
-          </h2>
-
-          <p style={{ marginBottom: "16px" }}>
-            Mensaje personalizado, diseño bonito y link activo por 90 días.
-          </p>
-
-          <a href="/create">
-            <button
-              style={{
-                padding: "12px 18px",
-                borderRadius: "10px",
-                border: "none",
-                cursor: "pointer",
-                width: "100%",
-              }}
-            >
-              Comprar Basic
-            </button>
-          </a>
-        </div>
-
-        {/* PREMIUM */}
-        <div
-          style={{
-            border: "1px solid #333",
-            borderRadius: "16px",
-            padding: "20px",
-            background: "#111",
-          }}
-        >
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
-            Premium — $5
-          </h2>
-
-          <p style={{ marginBottom: "16px" }}>
-            Más fotos, más emoción y link permanente.
-          </p>
-
-          <a href="/create">
-            <button
-              style={{
-                padding: "12px 18px",
-                borderRadius: "10px",
-                border: "none",
-                cursor: "pointer",
-                width: "100%",
-              }}
-            >
-              Comprar Premium
-            </button>
-          </a>
-        </div>
+      {/* decorative envelope, left */}
+      <div className="deco deco-left" aria-hidden="true">
+        <div className="deco-blob" />
+        <svg viewBox="0 0 220 220" className="deco-svg">
+          <rect
+            x="30"
+            y="70"
+            width="150"
+            height="105"
+            rx="10"
+            fill="none"
+            stroke="rgba(224,164,88,0.55)"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M32 76 105 135 178 76"
+            fill="none"
+            stroke="rgba(224,164,88,0.55)"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M105 118c-8-10-24-8-24 4 0 10 12 16 24 26 12-10 24-16 24-26 0-12-16-14-24-4Z"
+            fill="rgba(255,125,151,0.55)"
+          />
+        </svg>
       </div>
+
+      {/* decorative gift box, right */}
+      <div className="deco deco-right" aria-hidden="true">
+        <div className="deco-blob" />
+        <svg viewBox="0 0 220 220" className="deco-svg">
+          <rect
+            x="35"
+            y="95"
+            width="150"
+            height="90"
+            rx="8"
+            fill="none"
+            stroke="rgba(224,164,88,0.55)"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M35 120h150"
+            stroke="rgba(224,164,88,0.55)"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M110 95v90"
+            stroke="rgba(224,164,88,0.55)"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M110 95c-6-14-32-16-32-1s26 15 32 1c6 14 32 16 32 1s-26-15-32-1Z"
+            fill="none"
+            stroke="rgba(255,178,90,0.6)"
+            strokeWidth="1.4"
+          />
+        </svg>
+      </div>
+
+      {/* nav */}
+      <header className="nav">
+        <div className="brand">
+          <Icon name="envelope" size={22} />
+          <span>Momentia</span>
+        </div>
+
+        <nav className="nav-links">
+          {NAV_LINKS.map((item) => (
+            <a href="#" key={item.label} className="nav-link">
+              <Icon name={item.icon} size={16} />
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <button className="login-btn" type="button">
+          <Icon name="user" size={15} />
+          Iniciar sesión
+        </button>
+      </header>
+
+      {/* hero */}
+      <section className="hero">
+        <span className="eyebrow">✦ Para cada historia, un momento único</span>
+
+        <h1 className="headline">
+          Experiencias digitales
+          <br />
+          que <span className="grad-text">se sienten</span>
+        </h1>
+
+        <p className="subtitle">
+          Crea regalos personalizados para cumpleaños, aniversarios,
+          <br className="br-desktop" />
+          Día de la Madre, Navidad y cualquier ocasión especial.
+        </p>
+
+        <ul className="feature-row">
+          {FEATURES.map((f) => (
+            <li key={f.title} className="feature-item">
+              <span className="feature-icon">
+                <Icon name={f.icon} size={17} />
+              </span>
+              <span>
+                <strong>{f.title}</strong>
+                <em>{f.desc}</em>
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        {/* pricing */}
+        <div className="pricing">
+          <div className="plan">
+            <div className="plan-badge-icon">
+              <Icon name="envelope" size={20} />
+            </div>
+            <span className="plan-name">Basic</span>
+            <span className="plan-price">$3</span>
+            <p className="plan-desc">
+              Diseño bonito, mensaje personalizado y link activo por 90 días.
+            </p>
+            <a href="/create" className="plan-cta plan-cta-outline">
+              Elegir Basic
+            </a>
+          </div>
+
+          <div className="plan plan-premium">
+            <span className="plan-pill">Más popular</span>
+            <div className="plan-badge-icon plan-badge-icon-premium">
+              <Icon name="star" size={20} />
+            </div>
+            <span className="plan-name">Premium</span>
+            <span className="plan-price">$5</span>
+            <p className="plan-desc">Más fotos, más emoción y link permanente.</p>
+            <a href="/create" className="plan-cta plan-cta-filled">
+              Elegir Premium
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* trust bar */}
+      <footer className="trust-bar">
+        {TRUST_ITEMS.map((t) => (
+          <span className="trust-item" key={t.label}>
+            <Icon name={t.icon} size={15} />
+            {t.label}
+          </span>
+        ))}
+      </footer>
+
+      <style jsx global>{`
+        :root {
+          --bg: #0b0a09;
+          --card: #14120f;
+          --border: #2a251d;
+          --text: #f3ece0;
+          --text-muted: #9a9186;
+          --gold: #e0a458;
+          --pink: #ff7d97;
+          --grad: linear-gradient(135deg, #ffb25a, #ff7d97);
+        }
+        html,
+        body {
+          background: var(--bg);
+          margin: 0;
+        }
+      `}</style>
+
+      <style jsx>{`
+        .page {
+          position: relative;
+          min-height: 100vh;
+          overflow: hidden;
+          background: var(--bg);
+          color: var(--text);
+          font-family: var(--font-body), system-ui, sans-serif;
+          padding: 28px 40px 60px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* glows */
+        .glow {
+          position: absolute;
+          width: 480px;
+          height: 480px;
+          border-radius: 50%;
+          filter: blur(90px);
+          pointer-events: none;
+          opacity: 0.28;
+        }
+        .glow-left {
+          left: -220px;
+          top: 120px;
+          background: radial-gradient(circle, #ffb25a, transparent 70%);
+        }
+        .glow-right {
+          right: -220px;
+          top: 260px;
+          background: radial-gradient(circle, #ff7d97, transparent 70%);
+        }
+
+        .deco {
+          position: absolute;
+          width: 220px;
+          height: 220px;
+          pointer-events: none;
+        }
+        .deco-left {
+          left: 12px;
+          top: 220px;
+        }
+        .deco-right {
+          right: 12px;
+          top: 300px;
+        }
+        .deco-blob {
+          position: absolute;
+          inset: 30px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle,
+            rgba(255, 178, 90, 0.35),
+            transparent 70%
+          );
+          filter: blur(20px);
+        }
+        .deco-svg {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* nav */
+        .nav {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          margin-bottom: 64px;
+        }
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-family: var(--font-display), serif;
+          font-weight: 800;
+          font-size: 1.3rem;
+          color: var(--gold);
+        }
+        .nav-links {
+          display: flex;
+          gap: 28px;
+        }
+        .nav-link {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: var(--text-muted);
+          text-decoration: none;
+          font-size: 0.9rem;
+          font-weight: 500;
+          transition: color 0.2s ease;
+        }
+        .nav-link:hover {
+          color: var(--gold);
+        }
+        .login-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          color: var(--text);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          padding: 9px 18px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .login-btn:hover {
+          border-color: var(--gold);
+          background: rgba(224, 164, 88, 0.08);
+        }
+
+        /* hero */
+        .hero {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          max-width: 760px;
+          margin: 0 auto;
+        }
+        .eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--border);
+          background: rgba(224, 164, 88, 0.08);
+          color: var(--gold);
+          border-radius: 999px;
+          padding: 7px 18px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          margin-bottom: 28px;
+        }
+        .headline {
+          font-family: var(--font-display), serif;
+          font-weight: 800;
+          font-size: clamp(2.4rem, 5.5vw, 3.6rem);
+          line-height: 1.12;
+          margin: 0 0 22px;
+        }
+        .grad-text {
+          background: var(--grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .subtitle {
+          color: var(--text-muted);
+          font-size: 1.05rem;
+          line-height: 1.6;
+          max-width: 560px;
+          margin: 0 0 38px;
+        }
+        .br-desktop {
+          display: block;
+        }
+
+        .feature-row {
+          list-style: none;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 32px;
+          padding: 0;
+          margin: 0 0 48px;
+        }
+        .feature-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-align: left;
+        }
+        .feature-item strong {
+          display: block;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .feature-item em {
+          display: block;
+          font-style: normal;
+          font-size: 0.78rem;
+          color: var(--text-muted);
+        }
+        .feature-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: rgba(224, 164, 88, 0.1);
+          color: var(--gold);
+          flex-shrink: 0;
+        }
+
+        /* pricing */
+        .pricing {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 22px;
+          width: 100%;
+          max-width: 700px;
+        }
+        .plan {
+          position: relative;
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 30px 26px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+        .plan:hover {
+          transform: translateY(-4px);
+          border-color: var(--gold);
+        }
+        .plan-premium {
+          border-color: rgba(255, 125, 151, 0.5);
+        }
+        .plan-premium:hover {
+          border-color: var(--pink);
+        }
+        .plan-pill {
+          position: absolute;
+          top: -13px;
+          background: var(--grad);
+          color: #1a0e0a;
+          font-size: 0.68rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          padding: 5px 14px;
+          border-radius: 999px;
+        }
+        .plan-badge-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(224, 164, 88, 0.1);
+          color: var(--gold);
+          margin-bottom: 14px;
+        }
+        .plan-badge-icon-premium {
+          background: rgba(255, 125, 151, 0.12);
+          color: var(--pink);
+        }
+        .plan-name {
+          font-family: var(--font-display), serif;
+          font-size: 0.85rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          margin-bottom: 6px;
+        }
+        .plan-price {
+          font-family: var(--font-display), serif;
+          font-size: 2.4rem;
+          font-weight: 800;
+          margin-bottom: 14px;
+        }
+        .plan-desc {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          line-height: 1.55;
+          margin: 0 0 24px;
+          min-height: 48px;
+        }
+        .plan-cta {
+          width: 100%;
+          padding: 13px 18px;
+          border-radius: 12px;
+          font-weight: 600;
+          font-size: 0.92rem;
+          text-decoration: none;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .plan-cta:hover {
+          transform: translateY(-1px);
+          opacity: 0.92;
+        }
+        .plan-cta-outline {
+          border: 1px solid var(--gold);
+          color: var(--gold);
+          background: transparent;
+        }
+        .plan-cta-filled {
+          border: none;
+          background: var(--grad);
+          color: #1a0e0a;
+        }
+
+        /* trust bar */
+        .trust-bar {
+          position: relative;
+          z-index: 2;
+          margin: 56px auto 0;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 28px;
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          padding: 16px 34px;
+          width: fit-content;
+        }
+        .trust-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.85rem;
+          color: var(--text-muted);
+        }
+
+        @media (max-width: 760px) {
+          .page {
+            padding: 22px 18px 40px;
+          }
+          .nav-links {
+            display: none;
+          }
+          .deco {
+            display: none;
+          }
+          .pricing {
+            grid-template-columns: 1fr;
+          }
+          .br-desktop {
+            display: inline;
+          }
+          .trust-bar {
+            border-radius: 20px;
+            padding: 16px 20px;
+          }
+        }
+      `}</style>
     </main>
   );
 }
