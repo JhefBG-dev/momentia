@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { Playfair_Display, Inter } from "next/font/google";
 import styles from "./page.module.css";
@@ -164,10 +165,17 @@ export default function Home() {
 
       {/* nav */}
       <header className={styles.nav}>
-        <div className={styles.brand}>
-          <Icon name="envelope" size={22} />
+        <Link href="/" className={styles.brand}>
+          <Image
+            src="/logo-momentia.png"
+            alt="Momentia"
+            width={36}
+            height={36}
+            className={styles.brandLogo}
+            priority
+          />
           <span>Momentia</span>
-        </div>
+        </Link>
 
         <nav className={styles.navLinks}>
           {NAV_LINKS.map((item) => (
@@ -203,15 +211,22 @@ export default function Home() {
         </p>
 
         <ul className={styles.featureRow}>
-          {FEATURES.map((f) => (
-            <li key={f.title} className={styles.featureItem}>
-              <span className={styles.featureIcon}>
-                <Icon name={f.icon} size={17} />
+          {FEATURES.map((f, i) => (
+            <li key={f.title} className={styles.featureItemWrap}>
+              <span className={styles.featureItem}>
+                <span className={styles.featureIcon}>
+                  <Icon name={f.icon} size={17} />
+                </span>
+                <span>
+                  <strong>{f.title}</strong>
+                  <em>{f.desc}</em>
+                </span>
               </span>
-              <span>
-                <strong>{f.title}</strong>
-                <em>{f.desc}</em>
-              </span>
+              {i < FEATURES.length - 1 && (
+                <span className={styles.featureDivider} aria-hidden="true">
+                  |
+                </span>
+              )}
             </li>
           ))}
         </ul>
@@ -253,7 +268,9 @@ export default function Home() {
       <footer className={styles.trustBar}>
         {TRUST_ITEMS.map((t) => (
           <span className={styles.trustItem} key={t.label}>
-            <Icon name={t.icon} size={15} />
+            <span className={styles.trustIcon}>
+              <Icon name={t.icon} size={15} />
+            </span>
             {t.label}
           </span>
         ))}
