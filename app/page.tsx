@@ -169,8 +169,8 @@ export default function Home() {
           <Image
             src="/logo-momentia.png"
             alt="Momentia"
-            width={36}
-            height={36}
+            width={48}
+            height={48}
             className={styles.brandLogo}
             priority
           />
